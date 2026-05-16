@@ -1,86 +1,56 @@
 """
-LLM client using Kimi K2.6 via OpenClaw API.
+LLM client using Kimi K2.6 via OpenClaw CLI.
 Ollama is disabled due to GPU memory issues.
 """
 
 import os
 import json
-import requests
+import subprocess
 from typing import Optional
-
-OPENCLAW_URL = os.getenv("OPENCLAW_URL", "http://localhost:18789")
 
 
 class LLMClient:
-    """Client that calls Kimi K2.6 via OpenClaw API."""
+    """Client that calls Kimi K2.6 via OpenClaw CLI."""
 
     def __init__(self, model: str = "moonshot/kimi-k2.6"):
         self.model = model
-        self.openclaw_available = self._check_openclaw()
-
-    def _check_openclaw(self) -> bool:
-        """Check if OpenClaw is running."""
-        try:
-            resp = requests.get(f"{OPENCLAW_URL}/v1/health", timeout=2)
-            return resp.status_code == 200
-        except Exception:
-            return False
-
-    def _call_kimi(self, prompt: str, system: Optional[str] = None) -> str:
-        """Call Kimi K2.6 via Moonshot API."""
-        # Try Moonshot API directly
-        api_key = os.getenv("MOONSHOT_API_KEY", "")
-        if not api_key:
-            # Try to read from file
-            try:
-                with open(os.path.expanduser("~/.laracorp/secrets/kimi.key"), "r") as f:
-                    api_key = f.read().strip()
-            except:
-                pass
-        
-        if api_key:
-            headers = {
-                "Content-Type": "application/json",
-                "Authorization": f"Bearer {api_key}"
-            }
-            messages = []
-            
-            if system:
-                messages.append({"role": "system", "content": system})
-            
-            messages.append({"role": "user", "content": prompt})
-            
-            try:
-                resp = requests.post(
-                    "https://api.moonshot.cn/v1/chat/completions",
-                    json={
-                        "model": "moonshot-v1-8k",
-                        "messages": messages,
-                        "stream": False,
-                        "max_tokens": 1000
-                    },
-                    headers=headers,
-                    timeout=30
-                )
-                resp.raise_for_status()
-                return resp.json()["choices"][0]["message"]["content"]
-            except Exception as e:
-                print(f"⚠️ Moonshot API failed: {e}")
-                raise
-        else:
-            raise ValueError("No Moonshot API key found")
 
     def generate(self, prompt: str, system: Optional[str] = None) -> str:
-        """Generate text using Kimi K2.6 via OpenClaw."""
-        if self.openclaw_available:
-            try:
-                return self._call_kimi(prompt, system)
-            except Exception as e:
-                print(f"⚠️ Kimi failed: {e}. Using fallback.")
-                return self._fallback_response(prompt)
-        else:
-            print("⚠️ OpenClaw not available. Using fallback.")
+        """Generate text using Kimi K2.6 via OpenClaw CLI."""
+        try:
+            return self._call_openclaw(prompt, system)
+        except Exception as e:
+            print(f"⚠️ OpenClaw CLI failed: {e}. Using fallback.")
             return self._fallback_response(prompt)
+
+    def _call_openclaw(self, prompt: str, system: Optional[str] = None) -> str:
+        """Call OpenClaw CLI to run Kimi K2.6."""
+        full_prompt = prompt
+        if system:
+            full_prompt = f"{system}\n\n{prompt}"
+        
+        result = subprocess.run(
+            ["openclaw", "infer", "model", "run", "--model", self.model, "--prompt", full_prompt],
+            capture_output=True,
+            text=True,
+            timeout=60
+        )
+        
+        if result.returncode != 0:
+            raise RuntimeError(f"OpenClaw CLI error: {result.stderr}")
+        
+        # Parse the output - skip the header lines
+        lines = result.stdout.strip().split('\n')
+        # Find the actual output (after "outputs: N" line)
+        output_started = False
+        output_lines = []
+        for line in lines:
+            if output_started:
+                output_lines.append(line)
+            elif line.startswith("outputs:"):
+                output_started = True
+        
+        return '\n'.join(output_lines).strip()
 
     def _fallback_response(self, prompt: str) -> str:
         """Generate a contextual fallback response."""
