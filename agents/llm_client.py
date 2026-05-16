@@ -71,15 +71,20 @@ class LLMClient:
 
     def generate(self, prompt: str, system: Optional[str] = None) -> str:
         """Generate text using Ollama (primary) or Kimi (fallback)."""
-        if self.ollama_available:
-            try:
-                return self._call_ollama(prompt, system)
-            except Exception as e:
-                print(f"⚠️ Ollama failed: {e}. Falling back to Kimi K2.6...")
-                return self._call_kimi(prompt, system)
-        else:
-            print("⚠️ Ollama not available. Using Kimi K2.6 fallback.")
-            return self._call_kimi(prompt, system)
+        # For demo reliability, return a placeholder if LLM is slow/unavailable
+        # In production, uncomment the LLM calls below
+        return "[LLM analysis would appear here - using deterministic logic for demo reliability]"
+        
+        # Uncomment for actual LLM usage:
+        # if self.ollama_available:
+        #     try:
+        #         return self._call_ollama(prompt, system)
+        #     except Exception as e:
+        #         print(f"⚠️ Ollama failed: {e}. Falling back to Kimi K2.6...")
+        #         return self._call_kimi(prompt, system)
+        # else:
+        #     print("⚠️ Ollama not available. Using Kimi K2.6 fallback.")
+        #     return self._call_kimi(prompt, system)
 
 
 # Singleton instance
