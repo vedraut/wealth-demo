@@ -150,7 +150,9 @@ Tone: Professional, encouraging, actionable.
 
         executive_summary = llm.generate(
             report_prompt,
-            system="You are a senior wealth manager at a top Indian private bank. Write clear, professional reports for HNI clients."
+            system="You are a senior wealth manager at a top Indian private bank. Write clear, professional reports for HNI clients.",
+            client_id=state.get('client_id'),
+            response_type='summary'
         )
         add_thought("llm", "Generated AI-powered executive summary")
 

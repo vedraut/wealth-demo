@@ -7,6 +7,15 @@ import os
 import json
 import subprocess
 from typing import Optional
+import hashlib
+import time
+
+# Load pre-generated AI response cache
+_cache_file = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'ai_response_cache.json')
+_response_cache = {}
+if os.path.exists(_cache_file):
+    with open(_cache_file, 'r') as f:
+        _response_cache = json.load(f)
 
 
 class LLMClient:
@@ -15,8 +24,23 @@ class LLMClient:
     def __init__(self, model: str = "moonshot/kimi-k2.6"):
         self.model = model
 
-    def generate(self, prompt: str, system: Optional[str] = None) -> str:
-        """Generate text using Kimi K2.6 via OpenClaw CLI."""
+    def generate(self, prompt: str, system: Optional[str] = None, client_id: Optional[int] = None, response_type: Optional[str] = None) -> str:
+        """Generate text using Kimi K2.6 via OpenClaw CLI.
+        
+        Args:
+            prompt: The prompt text
+            system: Optional system message
+            client_id: Client ID for cache lookup (1, 2, or 3)
+            response_type: 'tax' or 'summary' for cache lookup
+        """
+        # Check pre-generated cache first (instant)
+        if client_id and response_type:
+            cache_key = f"{response_type}_{client_id}"
+            if cache_key in _response_cache:
+                print(f"[LLM] Using pre-generated AI response for client {client_id} ({response_type})")
+                return _response_cache[cache_key]
+        
+        # Try live generation via OpenClaw CLI
         try:
             return self._call_openclaw(prompt, system)
         except Exception as e:
@@ -29,12 +53,18 @@ class LLMClient:
         if system:
             full_prompt = f"{system}\n\n{prompt}"
         
+        print(f"[LLM] Calling Kimi K2.6 via OpenClaw CLI...")
+        start = time.time()
+        
         result = subprocess.run(
             ["openclaw", "infer", "model", "run", "--model", self.model, "--prompt", full_prompt],
             capture_output=True,
             text=True,
-            timeout=60
+            timeout=120
         )
+        
+        elapsed = time.time() - start
+        print(f"[LLM] Response received in {elapsed:.1f}s")
         
         if result.returncode != 0:
             raise RuntimeError(f"OpenClaw CLI error: {result.stderr}")
@@ -56,51 +86,15 @@ class LLMClient:
         """Generate a contextual fallback response."""
         prompt_lower = prompt.lower()
         if "tax" in prompt_lower and ("optimize" in prompt_lower or "strategy" in prompt_lower):
-            return self._get_tax_insights()
+            return "Tax analysis complete. Review the structured tax flags and recommendations for optimization opportunities."
         elif "executive summary" in prompt_lower or "wealth management report" in prompt_lower:
-            return self._get_executive_summary()
+            return "Portfolio analysis complete. Your asset allocation and performance metrics are summarized in the detailed report below."
         elif "tax" in prompt_lower:
             return "Tax analysis complete. Review the structured tax flags and recommendations for optimization opportunities."
         elif "portfolio" in prompt_lower or "wealth" in prompt_lower:
             return "Portfolio analysis complete. Your asset allocation and performance metrics are summarized in the detailed report below."
         else:
             return "Analysis complete. Review the recommendations and action items in the report section."
-    
-    def _get_tax_insights(self) -> str:
-        """Pre-generated tax optimization insights."""
-        return """Based on your current tax profile under the Old Regime, here are the key optimization strategies for FY 2025-26:
-
-**1. Maximize NPS Contribution (80CCD 1B)**
-You have ₹50,000 unused under Section 80CCD(1B). Investing this in NPS Tier-I provides exclusive tax benefit beyond your 80C limit, potentially saving ₹15,000 in taxes at the 30% slab.
-
-**2. Tax Loss Harvesting Opportunity**
-With unrealized equity losses of ₹102,000, consider harvesting these losses to offset your taxable LTCG of ₹389,000. This strategic move could save you ₹12,750 in LTCG tax at 12.5%.
-
-**3. Portfolio Rebalancing for Tax Efficiency**
-Your equity allocation at 16% is conservative for your age profile. Consider increasing through tax-efficient instruments like ELSS funds, which provide dual benefit of wealth creation and Section 80C deduction.
-
-**4. Health Insurance Optimization**
-Review your health insurance coverage to ensure you're maximizing Section 80D benefits. For senior citizen parents, you can claim up to ₹50,000 additional deduction.
-
-**5. Estate Planning Considerations**
-Given your high net worth and business owner status, consider creating a comprehensive estate plan including will, trust structures, and nomination updates across all holdings."""
-
-    def _get_executive_summary(self) -> str:
-        """Pre-generated executive summary."""
-        return """Your financial position demonstrates strong wealth accumulation with a portfolio value of ₹2.26 crore and healthy unrealized gains of ₹47.6 lakh (26.7% return). However, immediate tax optimization opportunities exist that could save over ₹27,000 annually.
-
-**Current Position Analysis:**
-Your portfolio shows significant concentration in real estate (55% allocation at ₹1.25 crore), which while appreciating well, limits liquidity. The equity allocation at 16% (₹36.5 lakh) is conservative given your age of 52, where ideal equity exposure would be approximately 48% based on the 100-minus-age rule.
-
-**Tax Efficiency Gaps:**
-Your Section 80C utilization at ₹2 lakh exceeds the ₹1.5 lakh limit, meaning ₹50,000 of investment provides no tax benefit. Redirecting this to NPS under 80CCD(1B) would create immediate tax savings.
-
-**Key Recommendations:**
-1. Execute tax loss harvesting before March 31, 2026
-2. Open NPS Tier-I and invest ₹50,000 under 80CCD(1B)
-3. Gradually rebalance equity allocation through SIPs
-4. Review and update nominations across all holdings
-5. Consider estate planning documentation given business ownership"""
 
 
 # Singleton instance

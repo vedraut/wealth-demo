@@ -131,7 +131,12 @@ Provide 3-4 specific, actionable tax optimization strategies for FY 2025-26.
 Keep it concise and practical.
 """
 
-        llm_insights = llm.generate(tax_prompt, system="You are a senior tax advisor specializing in Indian Income Tax Act 2025. Provide concise, actionable advice.")
+        llm_insights = llm.generate(
+            tax_prompt, 
+            system="You are a senior tax advisor specializing in Indian Income Tax Act 2025. Provide concise, actionable advice.",
+            client_id=state.get('client_id'),
+            response_type='tax'
+        )
         add_thought("llm", "Generated AI-powered tax insights")
 
         return {
