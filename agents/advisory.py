@@ -52,7 +52,7 @@ def advisory_agent(state: WealthManagementState) -> WealthManagementState:
                 description=f"Additional ₹{tax_analysis['nps_remaining']:,.0f} can be invested in NPS for exclusive tax benefit beyond 80C.",
                 action_items=[
                     "Open NPS Tier-I if not already done",
-                    "Invest ₹{tax_analysis['nps_remaining']:,.0f} before March 31",
+                    f"Invest ₹{tax_analysis['nps_remaining']:,.0f} before March 31",
                     "Consider increasing monthly NPS contribution"
                 ]
             ))
