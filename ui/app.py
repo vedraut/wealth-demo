@@ -1094,6 +1094,14 @@ def main():
     # Initialize DB
     init_db()
     
+    # Sidebar toggle button in main content (in case sidebar is closed)
+    sidebar_col1, sidebar_col2 = st.columns([1, 4])
+    with sidebar_col1:
+        if st.button("☰ Client Menu", type="secondary", use_container_width=True):
+            # This will open the sidebar
+            st.session_state.sidebar_open = True
+            st.rerun()
+    
     # Sidebar
     clients = get_clients()
     selected_client_id = render_sidebar(clients)
