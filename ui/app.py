@@ -994,12 +994,8 @@ def render_tax_section(tax_analysis):
     
     # LLM Insights
     if tax_analysis.get("llm_insights"):
-        with st.expander("AI Tax Insights"):
-            st.markdown(f"""
-            <div style="font-size: 0.875rem; color: #475569; line-height: 1.7;">
-                {tax_analysis["llm_insights"].replace(chr(10), '<br>')}
-            </div>
-            """, unsafe_allow_html=True)
+        with st.expander("🤖 AI Tax Insights"):
+            st.markdown(tax_analysis["llm_insights"])
     
     st.markdown("</div>", unsafe_allow_html=True)
 
@@ -1015,19 +1011,14 @@ def render_report_section(report):
     
     # Executive Summary
     if report.get("executive_summary"):
-        st.markdown(f"""
-        <div class="exec-summary">
-            <h3>Executive Summary</h3>
-            <div style="font-size: 0.875rem; color: #475569; line-height: 1.7;">
-                {report["executive_summary"].replace(chr(10), '<br>')}
-            </div>
-        </div>
-        """, unsafe_allow_html=True)
+        st.subheader("📋 Executive Summary")
+        st.markdown(report["executive_summary"])
+        st.divider()
     
     # Recommendations
     recommendations = report.get("recommendations", [])
     if recommendations:
-        st.markdown("<div style='font-size: 0.875rem; font-weight: 700; color: #0F172A; margin-bottom: 0.75rem;'>Recommendations</div>", unsafe_allow_html=True)
+        st.subheader("🎯 Recommendations")
         
         for rec in recommendations:
             priority = rec["priority"]
@@ -1036,29 +1027,19 @@ def render_report_section(report):
             description = rec["description"]
             actions = rec.get("action_items", [])
             
-            actions_html = ""
-            if actions:
-                actions_list = "".join([f"<li>{item}</li>" for item in actions])
-                actions_html = f"""
-                <div class="rec-actions">
-                    <strong>Action Items:</strong>
-                    <ul>{actions_list}</ul>
-                </div>
-                """
+            # Priority emoji
+            priority_emoji = {"high": "🔴", "medium": "🟡", "low": "🟢"}.get(priority, "⚪")
             
-            st.markdown(f"""
-            <div class="recommendation-card {priority}">
-                <div class="rec-header">
-                    <div>
-                        <div class="rec-title">{title}</div>
-                        <div class="rec-category">{category}</div>
-                    </div>
-                    <span class="rec-priority {priority}">{priority}</span>
-                </div>
-                <div class="rec-description">{description}</div>
-                {actions_html}
-            </div>
-            """, unsafe_allow_html=True)
+            with st.container():
+                st.markdown(f"**{priority_emoji} {title}** ({category.upper()})")
+                st.markdown(description)
+                
+                if actions:
+                    st.markdown("**Action Items:**")
+                    for action in actions:
+                        st.markdown(f"- {action}")
+                
+                st.divider()
     
     st.markdown("</div>", unsafe_allow_html=True)
 
