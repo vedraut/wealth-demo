@@ -148,33 +148,33 @@ def get_clients():
 
 
 # =============================================================================
-# RENDER FUNCTIONS
+# RENDER FUNCTIONS - Using Streamlit Native Components Only
 # =============================================================================
 def render_header():
-    """Render app header."""
+    """Render app header using native Streamlit components."""
     col1, col2 = st.columns([3, 1])
     with col1:
         st.title("💼 LaraCorp Wealth AI")
         st.caption("Multi-Agent Wealth Management & Tax Advisory System")
     with col2:
-        st.markdown(f"""
-        <div style="text-align: right; color: {FINANCE_COLORS['text_muted']}; font-size: 0.75rem;">
-            <div style="font-weight: 600; color: {FINANCE_COLORS['text_primary']};">Indian Income Tax Act 2025</div>
-            <div>FY 2025-26</div>
+        # Use native Streamlit components instead of HTML
+        st.container()
+        st.markdown("""
+        <div style="text-align: right;">
+            <p style="font-size: 0.75rem; color: #64748B; margin: 0;">
+                <span style="font-weight: 600; color: #0F172A;">Indian Income Tax Act 2025</span><br/>
+                FY 2025-26
+            </p>
         </div>
         """, unsafe_allow_html=True)
     st.divider()
 
 
 def render_sidebar(clients):
-    """Render sidebar with client selection."""
+    """Render sidebar with client selection using native components."""
     with st.sidebar:
-        st.markdown(f"""
-        <div style="padding: 1rem 0; border-bottom: 2px solid {FINANCE_COLORS['border']}; margin-bottom: 1rem;">
-            <div style="font-size: 1.25rem; font-weight: 700; color: {FINANCE_COLORS['primary']};">Client Selection</div>
-            <div style="font-size: 0.75rem; color: {FINANCE_COLORS['text_muted']};">Select a client to analyze</div>
-        </div>
-        """, unsafe_allow_html=True)
+        st.header("Client Selection")
+        st.caption("Select a client to analyze")
         
         client_options = {f"{c[1]} ({c[2]}, ₹{c[3]}L)": c[0] for c in clients}
         selected = st.radio(
@@ -185,23 +185,20 @@ def render_sidebar(clients):
         
         st.divider()
         
-        # Client info card
+        # Client info card using native components
         selected_id = client_options[selected]
         client = next(c for c in clients if c[0] == selected_id)
         
-        st.markdown(f"""
-        <div style="background: {FINANCE_COLORS['background']}; padding: 1rem; border-radius: 8px; border: 1px solid {FINANCE_COLORS['border']};">
-            <div style="font-size: 0.875rem; font-weight: 600; color: {FINANCE_COLORS['text_primary']}; margin-bottom: 0.5rem;">{client[1]}</div>
-            <div style="font-size: 0.75rem; color: {FINANCE_COLORS['text_muted']};">{client[2]}</div>
-            <div style="font-size: 0.875rem; font-weight: 700; color: {FINANCE_COLORS['secondary']}; margin-top: 0.5rem;">₹{client[3]}L/year</div>
-        </div>
-        """, unsafe_allow_html=True)
+        with st.container(border=True):
+            st.markdown(f"**{client[1]}**")
+            st.caption(client[2])
+            st.markdown(f"<span style='color: #1E3A8A; font-weight: 700;'>₹{client[3]}L/year</span>", unsafe_allow_html=True)
         
         return selected_id
 
 
 def render_kpi_cards(asset_summary, tax_analysis):
-    """Render KPI metric cards."""
+    """Render KPI metric cards using st.metric."""
     total_value = asset_summary.get("total_value", 0)
     total_invested = asset_summary.get("total_invested", 0)
     total_pnl = asset_summary.get("total_unrealized_pnl", 0)
@@ -223,7 +220,7 @@ def render_kpi_cards(asset_summary, tax_analysis):
 
 
 def render_agent_timeline(thoughts):
-    """Render agent execution timeline."""
+    """Render agent execution timeline using native expander."""
     with st.expander("🔍 Agent Execution Timeline", expanded=False):
         for thought in thoughts:
             agent_name = thought["agent"]
@@ -242,7 +239,7 @@ def render_agent_timeline(thoughts):
 
 
 def render_portfolio_section(asset_summary, portfolio):
-    """Render portfolio breakdown with charts."""
+    """Render portfolio breakdown with charts using native components."""
     st.subheader("📈 Portfolio Analysis")
     
     breakdown = asset_summary.get("breakdown", [])
@@ -281,21 +278,17 @@ def render_portfolio_section(asset_summary, portfolio):
                 pnl_color = "#059669" if pnl >= 0 else "#DC2626"
                 pnl_sign = "+" if pnl >= 0 else ""
                 
-                st.markdown(f"""
-                <div style="display: flex; justify-content: space-between; align-items: center; 
-                            padding: 0.625rem 0; border-bottom: 1px solid #E2E8F0;">
-                    <div>
-                        <div style="font-size: 0.8125rem; font-weight: 600; color: #0F172A;">{asset_type}</div>
-                        <div style="font-size: 0.75rem; color: #94A3B8;">{pnl_sign}{pnl_pct:.1f}%</div>
-                    </div>
-                    <div style="text-align: right;">
-                        <div style="font-size: 0.875rem; font-weight: 700; color: #0F172A;">₹{value:,.0f}</div>
-                        <div style="font-size: 0.75rem; color: {pnl_color}; font-weight: 600;">{pnl_sign}₹{abs(pnl):,.0f}</div>
-                    </div>
-                </div>
-                """, unsafe_allow_html=True)
+                # Use native columns instead of HTML
+                c1, c2 = st.columns([2, 1])
+                with c1:
+                    st.markdown(f"**{asset_type}**")
+                    st.caption(f"{pnl_sign}{pnl_pct:.1f}%")
+                with c2:
+                    st.markdown(f"<p style='text-align: right; margin: 0;'><strong>₹{value:,.0f}</strong></p>", unsafe_allow_html=True)
+                    st.markdown(f"<p style='text-align: right; margin: 0; color: {pnl_color}; font-size: 0.75rem; font-weight: 600;'>{pnl_sign}₹{abs(pnl):,.0f}</p>", unsafe_allow_html=True)
+                st.divider()
     
-    # Holdings table
+    # Holdings table using native st.dataframe
     if portfolio:
         st.markdown("**Holdings Detail**")
         
@@ -322,7 +315,7 @@ def render_portfolio_section(asset_summary, portfolio):
 
 
 def render_tax_section(tax_analysis):
-    """Render tax analysis with progress bars and flags."""
+    """Render tax analysis with progress bars and flags using native components."""
     st.subheader("🧮 Tax Analysis (FY 2025-26)")
     
     col1, col2, col3 = st.columns(3)
@@ -330,82 +323,110 @@ def render_tax_section(tax_analysis):
     with col1:
         sec_80c_used = tax_analysis.get("sec_80c_used", 0)
         sec_80c_limit = 150000
-        st.metric("Section 80C Used", f"₹{sec_80c_used:,.0f}", f"₹{sec_80c_limit - sec_80c_used:,.0f} remaining")
+        remaining_80c = max(0, sec_80c_limit - sec_80c_used)
+        st.metric("Section 80C Used", f"₹{sec_80c_used:,.0f}", f"₹{remaining_80c:,.0f} remaining")
         st.progress(min(1.0, sec_80c_used / sec_80c_limit))
     
     with col2:
         nps_used = tax_analysis.get("nps_used", 0)
         nps_limit = 50000
-        st.metric("80CCD(1B) NPS", f"₹{nps_used:,.0f}", f"₹{nps_limit - nps_used:,.0f} remaining")
+        remaining_nps = max(0, nps_limit - nps_used)
+        st.metric("80CCD(1B) NPS", f"₹{nps_used:,.0f}", f"₹{remaining_nps:,.0f} remaining")
         st.progress(min(1.0, nps_used / nps_limit))
     
     with col3:
         taxable_ltcg = tax_analysis.get("taxable_ltcg", 0)
         ltcg_tax = tax_analysis.get("ltcg_tax", 0)
-        st.metric("Taxable LTCG", f"₹{taxable_ltcg:,.0f}", f"Tax: ₹{ltcg_tax:,.0f}" if ltcg_tax > 0 else "Within exemption")
+        ltcg_delta = f"Tax: ₹{ltcg_tax:,.0f}" if ltcg_tax > 0 else "Within exemption"
+        st.metric("Taxable LTCG", f"₹{taxable_ltcg:,.0f}", ltcg_delta)
     
-    # Tax flags
+    # Tax flags using native containers
     flags = tax_analysis.get("flags", [])
     if flags:
         st.markdown("**Tax Flags & Opportunities**")
         
         for flag in flags:
-            severity = flag["severity"]
-            section = flag["section"]
-            message = flag["message"]
+            severity = flag.get("severity", "info")
+            section = flag.get("section", "General")
+            message = flag.get("message", "")
             savings = flag.get("potential_savings", 0)
             
             emoji = {"warning": "⚠️", "info": "ℹ️", "critical": "🚨"}.get(severity, "•")
             
-            with st.container():
-                col1, col2 = st.columns([3, 1])
-                with col1:
-                    st.markdown(f"**{emoji} {section}** — {message}")
-                with col2:
+            with st.container(border=True):
+                c1, c2 = st.columns([3, 1])
+                with c1:
+                    st.markdown(f"**{emoji} {section}**")
+                    st.caption(message)
+                with c2:
                     if savings > 0:
-                        st.markdown(f"<div style='text-align: right; color: #059669; font-weight: 600;'>Save ₹{savings:,.0f}</div>", unsafe_allow_html=True)
-                st.divider()
+                        st.markdown(f"<p style='text-align: right; color: #059669; font-weight: 600; margin: 0;'>Save ₹{savings:,.0f}</p>", unsafe_allow_html=True)
+    else:
+        st.info("No tax flags found for this client.")
     
-    # LLM Insights
-    if tax_analysis.get("llm_insights"):
+    # LLM Insights using native expander
+    llm_insights = tax_analysis.get("llm_insights", "")
+    if llm_insights:
         with st.expander("🤖 AI Tax Insights"):
-            st.markdown(tax_analysis["llm_insights"])
+            st.markdown(llm_insights)
+    else:
+        with st.expander("🤖 AI Tax Insights"):
+            st.info("No AI insights available for this analysis.")
 
 
 def render_report_section(report):
-    """Render advisory report with executive summary and recommendations."""
+    """Render advisory report with executive summary and recommendations using native components."""
     st.subheader("📋 Advisory Report")
     
-    # Executive Summary
-    if report.get("executive_summary"):
-        st.markdown("### Executive Summary")
-        st.markdown(report["executive_summary"])
-        st.divider()
+    # Executive Summary using native components
+    executive_summary = report.get("executive_summary", "")
+    if executive_summary:
+        with st.container(border=True):
+            st.markdown("### 📝 Executive Summary")
+            st.markdown(executive_summary)
+    else:
+        with st.container(border=True):
+            st.markdown("### 📝 Executive Summary")
+            st.info("No executive summary available.")
     
-    # Recommendations
+    st.divider()
+    
+    # Recommendations using native components
     recommendations = report.get("recommendations", [])
     if recommendations:
         st.markdown("### 🎯 Recommendations")
         
-        for rec in recommendations:
-            priority = rec["priority"]
-            category = rec["category"]
-            title = rec["title"]
-            description = rec["description"]
+        for i, rec in enumerate(recommendations):
+            priority = rec.get("priority", "medium")
+            category = rec.get("category", "General")
+            title = rec.get("title", "Recommendation")
+            description = rec.get("description", "")
             actions = rec.get("action_items", [])
             
             priority_emoji = {"high": "🔴", "medium": "🟡", "low": "🟢"}.get(priority, "⚪")
+            priority_color = {"high": "#DC2626", "medium": "#D97706", "low": "#059669"}.get(priority, "#64748B")
             
-            with st.container():
-                st.markdown(f"**{priority_emoji} {title}** *({category.upper()})*")
-                st.markdown(description)
+            with st.container(border=True):
+                # Header row
+                c1, c2 = st.columns([3, 1])
+                with c1:
+                    st.markdown(f"**{priority_emoji} {title}**")
+                with c2:
+                    st.markdown(f"<p style='text-align: right; margin: 0;'><span style='background-color: {priority_color}20; color: {priority_color}; padding: 2px 8px; border-radius: 4px; font-size: 0.75rem; font-weight: 600;'>{category.upper()}</span></p>", unsafe_allow_html=True)
                 
+                # Description
+                if description:
+                    st.markdown(description)
+                
+                # Action items using native list
                 if actions:
                     st.markdown("**Action Items:**")
                     for action in actions:
                         st.markdown(f"- {action}")
-                
-                st.divider()
+                else:
+                    st.caption("No specific action items for this recommendation.")
+    else:
+        st.info("No recommendations available for this client.")
 
 
 def render_empty_state():
@@ -467,11 +488,15 @@ def main():
         # Tax Analysis
         if tax_analysis:
             render_tax_section(tax_analysis)
+        else:
+            st.warning("No tax analysis data available.")
         
         # Advisory Report
         report = result.get("report", {})
         if report:
             render_report_section(report)
+        else:
+            st.warning("No advisory report available.")
         
         # Footer
         st.caption(f"Report generated on {datetime.now().strftime('%B %d, %Y at %H:%M')} | LaraCorp Wealth AI v1.0")
