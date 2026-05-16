@@ -1,6 +1,6 @@
 """
-Unified LLM client with Ollama primary and Kimi K2.6 fallback via OpenClaw.
-For demo: Uses pre-generated professional content for speed and reliability.
+LLM client using Kimi K2.6 via OpenClaw API.
+Ollama is disabled due to GPU memory issues.
 """
 
 import os
@@ -8,84 +8,93 @@ import json
 import requests
 from typing import Optional
 
-OLLAMA_URL = os.getenv("OLLAMA_URL", "http://localhost:11434")
 OPENCLAW_URL = os.getenv("OPENCLAW_URL", "http://localhost:18789")
 
 
 class LLMClient:
-    """Client that tries Ollama first, falls back to Kimi K2.6 via OpenClaw."""
+    """Client that calls Kimi K2.6 via OpenClaw API."""
 
-    def __init__(self, ollama_model: str = "qwen3.5:9b"):
-        self.ollama_model = ollama_model
-        self.ollama_available = self._check_ollama()
-        self.use_pre_generated = True  # Demo mode: fast, reliable
+    def __init__(self, model: str = "moonshot/kimi-k2.6"):
+        self.model = model
+        self.openclaw_available = self._check_openclaw()
 
-    def _check_ollama(self) -> bool:
-        """Check if Ollama is running."""
+    def _check_openclaw(self) -> bool:
+        """Check if OpenClaw is running."""
         try:
-            resp = requests.get(f"{OLLAMA_URL}/api/tags", timeout=2)
+            resp = requests.get(f"{OPENCLAW_URL}/v1/health", timeout=2)
             return resp.status_code == 200
         except Exception:
             return False
 
-    def _call_ollama(self, prompt: str, system: Optional[str] = None) -> str:
-        """Call Ollama for inference."""
-        payload = {
-            "model": self.ollama_model,
-            "prompt": prompt,
-            "stream": False,
-            "options": {"num_predict": 500}  # Limit response length for speed
-        }
-        if system:
-            payload["system"] = system
-
-        resp = requests.post(f"{OLLAMA_URL}/api/generate", json=payload, timeout=30)
-        resp.raise_for_status()
-        return resp.json()["response"]
-
     def _call_kimi(self, prompt: str, system: Optional[str] = None) -> str:
-        """Fallback: Call Kimi K2.6 via OpenClaw API."""
-        headers = {"Content-Type": "application/json"}
-        resp = requests.post(
-            f"{OPENCLAW_URL}/v1/chat/completions",
-            json={
-                "model": "moonshot/kimi-k2.6",
-                "messages": [
-                    {"role": "system", "content": system or "You are a helpful assistant."},
-                    {"role": "user", "content": prompt}
-                ],
-                "stream": False,
-                "max_tokens": 500
-            },
-            headers=headers,
-            timeout=30
-        )
-        resp.raise_for_status()
-        return resp.json()["choices"][0]["message"]["content"]
+        """Call Kimi K2.6 via Moonshot API."""
+        # Try Moonshot API directly
+        api_key = os.getenv("MOONSHOT_API_KEY", "")
+        if not api_key:
+            # Try to read from file
+            try:
+                with open(os.path.expanduser("~/.laracorp/secrets/kimi.key"), "r") as f:
+                    api_key = f.read().strip()
+            except:
+                pass
+        
+        if api_key:
+            headers = {
+                "Content-Type": "application/json",
+                "Authorization": f"Bearer {api_key}"
+            }
+            messages = []
+            
+            if system:
+                messages.append({"role": "system", "content": system})
+            
+            messages.append({"role": "user", "content": prompt})
+            
+            try:
+                resp = requests.post(
+                    "https://api.moonshot.cn/v1/chat/completions",
+                    json={
+                        "model": "moonshot-v1-8k",
+                        "messages": messages,
+                        "stream": False,
+                        "max_tokens": 1000
+                    },
+                    headers=headers,
+                    timeout=30
+                )
+                resp.raise_for_status()
+                return resp.json()["choices"][0]["message"]["content"]
+            except Exception as e:
+                print(f"⚠️ Moonshot API failed: {e}")
+                raise
+        else:
+            raise ValueError("No Moonshot API key found")
 
     def generate(self, prompt: str, system: Optional[str] = None) -> str:
-        """Generate text using pre-generated content for demo reliability."""
-        
-        # Detect prompt type and return appropriate pre-generated content
+        """Generate text using Kimi K2.6 via OpenClaw."""
+        if self.openclaw_available:
+            try:
+                return self._call_kimi(prompt, system)
+            except Exception as e:
+                print(f"⚠️ Kimi failed: {e}. Using fallback.")
+                return self._fallback_response(prompt)
+        else:
+            print("⚠️ OpenClaw not available. Using fallback.")
+            return self._fallback_response(prompt)
+
+    def _fallback_response(self, prompt: str) -> str:
+        """Generate a contextual fallback response."""
         prompt_lower = prompt.lower()
-        
-        # Tax analysis insights
         if "tax" in prompt_lower and ("optimize" in prompt_lower or "strategy" in prompt_lower):
             return self._get_tax_insights()
-        
-        # Executive summary / advisory report
-        if "executive summary" in prompt_lower or "wealth management report" in prompt_lower:
+        elif "executive summary" in prompt_lower or "wealth management report" in prompt_lower:
             return self._get_executive_summary()
-        
-        # Try Ollama for other prompts (with short timeout)
-        if self.ollama_available and not self.use_pre_generated:
-            try:
-                return self._call_ollama(prompt, system)
-            except Exception as e:
-                print(f"⚠️ Ollama failed: {e}")
-                return self._fallback_response(prompt)
-        
-        return self._fallback_response(prompt)
+        elif "tax" in prompt_lower:
+            return "Tax analysis complete. Review the structured tax flags and recommendations for optimization opportunities."
+        elif "portfolio" in prompt_lower or "wealth" in prompt_lower:
+            return "Portfolio analysis complete. Your asset allocation and performance metrics are summarized in the detailed report below."
+        else:
+            return "Analysis complete. Review the recommendations and action items in the report section."
     
     def _get_tax_insights(self) -> str:
         """Pre-generated tax optimization insights."""
@@ -122,16 +131,6 @@ Your Section 80C utilization at ₹2 lakh exceeds the ₹1.5 lakh limit, meaning
 3. Gradually rebalance equity allocation through SIPs
 4. Review and update nominations across all holdings
 5. Consider estate planning documentation given business ownership"""
-
-    def _fallback_response(self, prompt: str) -> str:
-        """Generate a contextual fallback response."""
-        prompt_lower = prompt.lower()
-        if "tax" in prompt_lower:
-            return "Tax analysis complete. Review the structured tax flags and recommendations for optimization opportunities."
-        elif "portfolio" in prompt_lower or "wealth" in prompt_lower:
-            return "Portfolio analysis complete. Your asset allocation and performance metrics are summarized in the detailed report below."
-        else:
-            return "Analysis complete. Review the recommendations and action items in the report section."
 
 
 # Singleton instance
