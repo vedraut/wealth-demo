@@ -163,7 +163,7 @@ python -c "from graph import run_wealth_analysis; result = run_wealth_analysis(1
 
 ## 📝 License
 
-Private — LaraCorp Internal Demo
+Private — Internal Demo
 
 ---
 

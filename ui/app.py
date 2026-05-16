@@ -20,7 +20,7 @@ from datetime import datetime
 # PAGE CONFIGURATION
 # =============================================================================
 st.set_page_config(
-    page_title="LaraCorp Wealth AI",
+    page_title="Wealth AI",
     page_icon="💼",
     layout="wide",
     initial_sidebar_state="expanded",
@@ -66,7 +66,7 @@ def render_header():
     """Render app header."""
     col1, col2 = st.columns([3, 1])
     with col1:
-        st.title("💼 LaraCorp Wealth AI")
+        st.title("💼 Wealth AI")
         st.caption("Multi-Agent Wealth Management & Tax Advisory System")
     with col2:
         st.caption("Indian Income Tax Act 2025 | FY 2025-26")
@@ -377,7 +377,7 @@ def main():
             st.warning("Advisory report not available.")
         
         # Footer
-        st.caption(f"Report generated on {datetime.now().strftime('%B %d, %Y at %H:%M')} | LaraCorp Wealth AI v1.0")
+        st.caption(f"Report generated on {datetime.now().strftime('%B %d, %Y at %H:%M')} | Wealth AI v1.0")
     
     else:
         render_empty_state()
