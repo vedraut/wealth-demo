@@ -227,10 +227,9 @@ def main():
                     st.error("Errors occurred during analysis:")
                     for error in errors:
                         st.error(error)
-
-    else:
-        # Show placeholder
-        st.info("👈 Select a client and click 'Generate Wealth Report' to see the AI agents in action!")
+        else:
+            # Show placeholder
+            st.info("👈 Select a client and click 'Generate Wealth Report' to see the AI agents in action!")
 
         # Show architecture diagram
         st.markdown("---")
