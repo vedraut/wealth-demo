@@ -9,6 +9,7 @@ from models.state import WealthManagementState
 from agents.data_retrieval import data_retrieval_agent
 from agents.tax_analysis import tax_analysis_agent
 from agents.advisory import advisory_agent
+from typing import Generator
 
 
 def create_wealth_graph() -> StateGraph:
@@ -64,3 +65,70 @@ def run_wealth_analysis(client_id: int) -> WealthManagementState:
     # Run the graph
     final_state = graph.invoke(initial_state)
     return final_state
+
+
+def run_wealth_analysis_streaming(client_id: int) -> Generator[dict, None, None]:
+    """
+    Run the full wealth analysis workflow with streaming progress updates.
+    Yields progress events so the UI can show real-time agent execution.
+
+    Args:
+        client_id: The client ID to analyze
+
+    Yields:
+        dict progress events with keys: stage, agent, status, message, state
+    """
+    from agents.data_retrieval import data_retrieval_agent
+    from agents.tax_analysis import tax_analysis_agent
+    from agents.advisory import advisory_agent
+
+    initial_state: WealthManagementState = {
+        "client_id": client_id,
+        "status": "initialized",
+    }
+
+    agent_configs = [
+        ("data_retrieval", "Data Retrieval Agent", data_retrieval_agent),
+        ("tax_analysis", "Tax Analysis Agent", tax_analysis_agent),
+        ("advisory", "Advisory Agent", advisory_agent),
+    ]
+
+    current_state = initial_state
+
+    for stage_key, agent_name, agent_func in agent_configs:
+        # Yield "starting" event
+        yield {
+            "stage": stage_key,
+            "agent": agent_name,
+            "status": "running",
+            "message": f"Starting {agent_name}...",
+            "thought": None,
+            "state": current_state,
+        }
+
+        # Run the agent
+        current_state = agent_func(current_state)
+
+        # Get the latest thought
+        thoughts = current_state.get("agent_thoughts", [])
+        latest_thought = thoughts[-1] if thoughts else None
+
+        # Yield "completed" event
+        yield {
+            "stage": stage_key,
+            "agent": agent_name,
+            "status": current_state.get("status", "completed"),
+            "message": latest_thought["thought"] if latest_thought else f"{agent_name} completed",
+            "thought": latest_thought,
+            "state": current_state,
+        }
+
+    # Yield final completion event
+    yield {
+        "stage": "complete",
+        "agent": "System",
+        "status": "completed",
+        "message": "Analysis complete",
+        "thought": None,
+        "state": current_state,
+    }

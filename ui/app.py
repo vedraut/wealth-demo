@@ -9,7 +9,7 @@ import os
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from graph import run_wealth_analysis
+from graph import run_wealth_analysis, run_wealth_analysis_streaming
 from database.seed_data import create_database, get_connection
 import pandas as pd
 import plotly.graph_objects as go
@@ -541,8 +541,122 @@ def main():
         analyze_clicked = st.button("Generate Wealth Report", type="primary", use_container_width=True)
 
     if analyze_clicked:
-        with st.spinner("Running multi-agent analysis pipeline..."):
-            result = run_wealth_analysis(selected_client_id)
+        # Create containers for real-time progress
+        progress_container = st.container()
+        with progress_container:
+            st.markdown(f'<div style="font-size:11px; font-weight:600; text-transform:uppercase; letter-spacing:0.8px; color:{_C["text_muted"]}; margin-bottom:16px;">Agent Execution Pipeline</div>', unsafe_allow_html=True)
+
+            # Progress bar
+            progress_bar = st.progress(0)
+
+            # Agent status containers
+            agent_status_cols = st.columns(3)
+            agent_statuses = {}
+            agent_icons = {
+                "Data Retrieval Agent": "📊",
+                "Tax Analysis Agent": "🧮",
+                "Advisory Agent": "📋",
+            }
+            agent_descriptions = {
+                "Data Retrieval Agent": "Fetching portfolio data from database",
+                "Tax Analysis Agent": "Analyzing tax implications under IT Act 2025",
+                "Advisory Agent": "Generating recommendations & executive summary",
+            }
+
+            for i, (agent_key, col) in enumerate(zip(["Data Retrieval Agent", "Tax Analysis Agent", "Advisory Agent"], agent_status_cols)):
+                with col:
+                    icon = agent_icons.get(agent_key, "🤖")
+                    desc = agent_descriptions.get(agent_key, "")
+                    agent_statuses[agent_key] = st.empty()
+                    agent_statuses[agent_key].markdown(f"""
+                    <div style="background:{_C['card']}; border:1px solid {_C['border_subtle']}; border-radius:12px; padding:16px; text-align:center; opacity:0.5;" id="agent-status-{i}">
+                        <div style="font-size:24px; margin-bottom:8px;">{icon}</div>
+                        <div style="font-size:13px; font-weight:600; color:{_C['text_muted']};">{agent_key}</div>
+                        <div style="font-size:11px; color:{_C['text_muted']}; margin-top:4px;">Waiting...</div>
+                    </div>
+                    """, unsafe_allow_html=True)
+
+            # Live log container
+            log_container = st.empty()
+            log_messages = []
+
+        # Run the streaming analysis
+        result = None
+        stage_map = {"data_retrieval": 0, "tax_analysis": 1, "advisory": 2}
+        completed_stages = set()
+
+        for event in run_wealth_analysis_streaming(selected_client_id):
+            stage = event["stage"]
+            agent = event["agent"]
+            status = event["status"]
+            message = event["message"]
+
+            if stage == "complete":
+                result = event["state"]
+                progress_bar.progress(1.0)
+                break
+
+            # Update progress
+            stage_idx = stage_map.get(stage, 0)
+            progress = (stage_idx + 0.5) / 3.0
+            progress_bar.progress(min(1.0, progress))
+
+            # Update agent status card
+            if agent in agent_statuses:
+                icon = agent_icons.get(agent, "🤖")
+                desc = agent_descriptions.get(agent, "")
+
+                if status in ("data_fetched", "tax_analyzed"):
+                    # Stage completed
+                    completed_stages.add(stage)
+                    agent_statuses[agent].markdown(f"""
+                    <div style="background:{_C['card']}; border:1px solid {_C['success']}; border-radius:12px; padding:16px; text-align:center;">
+                        <div style="font-size:24px; margin-bottom:8px;">✅</div>
+                        <div style="font-size:13px; font-weight:600; color:{_C['success']};">{agent}</div>
+                        <div style="font-size:11px; color:{_C['text_sec']}; margin-top:4px;">Completed</div>
+                    </div>
+                    """, unsafe_allow_html=True)
+                elif stage in completed_stages:
+                    # Already done
+                    pass
+                else:
+                    # Currently running
+                    agent_statuses[agent].markdown(f"""
+                    <div style="background:{_C['card']}; border:1px solid {_C['primary']}; border-radius:12px; padding:16px; text-align:center; box-shadow:0 0 20px rgba(59,130,246,0.15);">
+                        <div style="font-size:24px; margin-bottom:8px;">{icon}</div>
+                        <div style="font-size:13px; font-weight:600; color:{_C['primary']};">{agent}</div>
+                        <div style="font-size:11px; color:{_C['text_sec']}; margin-top:4px;">{desc}</div>
+                        <div style="font-size:11px; color:{_C['text_muted']}; margin-top:8px; font-style:italic;">{message[:80]}...</div>
+                    </div>
+                    """, unsafe_allow_html=True)
+
+            # Update live log
+            log_messages.append(f"**{agent}** — {message}")
+            if len(log_messages) > 6:
+                log_messages = log_messages[-6:]
+            log_container.markdown("\n".join([f"- {m}" for m in log_messages]))
+
+            # Small delay for visual effect
+            import time
+            time.sleep(0.1)
+
+        # Mark remaining agents as completed
+        for agent_key in ["Data Retrieval Agent", "Tax Analysis Agent", "Advisory Agent"]:
+            if agent_key in agent_statuses:
+                agent_statuses[agent_key].markdown(f"""
+                <div style="background:{_C['card']}; border:1px solid {_C['success']}; border-radius:12px; padding:16px; text-align:center;">
+                    <div style="font-size:24px; margin-bottom:8px;">✅</div>
+                    <div style="font-size:13px; font-weight:600; color:{_C['success']};">{agent_key}</div>
+                    <div style="font-size:11px; color:{_C['text_sec']}; margin-top:4px;">Completed</div>
+                </div>
+                """, unsafe_allow_html=True)
+
+        # Clear the progress container after completion
+        progress_container.empty()
+
+        if result is None:
+            st.error("Analysis failed to complete.")
+            return
 
         for error in result.get("errors", []):
             st.error(f"Analysis Error: {error}")
