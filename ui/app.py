@@ -541,7 +541,7 @@ def main():
     col1, col2, col3 = st.columns([1, 2, 1])
     with col1:
         use_cache = st.toggle(
-            "⚡ Fast Mode (Cached)",
+            "Fast Mode (Cached)",
             value=True,
             help="Toggle ON for instant cached responses (~1s). Toggle OFF for live Kimi K2.6 AI generation (~40s)."
         )
@@ -550,20 +550,18 @@ def main():
         analyze_clicked = st.button("Generate Wealth Report", type="primary", use_container_width=True)
     with col3:
         if not use_cache:
-            st.markdown(f'<div style="text-align:center; padding-top:8px;"><span style="background:rgba(139,92,246,0.15); color:#C4B5FD; border:1px solid rgba(139,92,246,0.3); border-radius:4px; padding:4px 10px; font-size:11px; font-weight:600;">🧠 Live Kimi K2.6</span></div>', unsafe_allow_html=True)
+            st.markdown('<div style="text-align:center; padding-top:8px;"><span style="background:rgba(139,92,246,0.15); color:#C4B5FD; border:1px solid rgba(139,92,246,0.3); border-radius:4px; padding:4px 10px; font-size:11px; font-weight:600; letter-spacing:0.4px;">Live AI</span></div>', unsafe_allow_html=True)
         else:
-            st.markdown(f'<div style="text-align:center; padding-top:8px;"><span style="background:rgba(16,185,129,0.15); color:#6EE7B7; border:1px solid rgba(16,185,129,0.3); border-radius:4px; padding:4px 10px; font-size:11px; font-weight:600;">⚡ Cached (Instant)</span></div>', unsafe_allow_html=True)
+            st.markdown(f'<div style="text-align:center; padding-top:8px;"><span style="background:rgba(16,185,129,0.15); color:#6EE7B7; border:1px solid rgba(16,185,129,0.3); border-radius:4px; padding:4px 10px; font-size:11px; font-weight:600; letter-spacing:0.4px;">Cached · Instant</span></div>', unsafe_allow_html=True)
 
     if analyze_clicked:
         # Create containers for real-time progress
         progress_container = st.container()
         with progress_container:
-            mode_badge = "⚡ Cached" if use_cache else "🧠 Live Kimi K2.6"
+            mode_badge = "Cached · Instant" if use_cache else "Live AI"
             mode_color = _C["success"] if use_cache else "#8B5CF6"
-            st.markdown(f'''<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">
-                <div style="font-size:11px; font-weight:600; text-transform:uppercase; letter-spacing:0.8px; color:{_C["text_muted"]};">Agent Execution Pipeline</div>
-                <div style="background:rgba({"16,185,129" if use_cache else "139,92,246"},0.15); color:{mode_color}; border:1px solid rgba({"16,185,129" if use_cache else "139,92,246"},0.3); border-radius:4px; padding:3px 10px; font-size:10px; font-weight:600;">{mode_badge}</div>
-            </div>''', unsafe_allow_html=True)
+            mode_rgb = "16,185,129" if use_cache else "139,92,246"
+            st.markdown(f'<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;"><div style="font-size:11px; font-weight:600; text-transform:uppercase; letter-spacing:0.8px; color:{_C["text_muted"]};">Agent Execution Pipeline</div><div style="background:rgba({mode_rgb},0.15); color:{mode_color}; border:1px solid rgba({mode_rgb},0.3); border-radius:4px; padding:3px 10px; font-size:10px; font-weight:600; letter-spacing:0.4px;">{mode_badge}</div></div>', unsafe_allow_html=True)
 
             # Progress bar
             progress_bar = st.progress(0)
@@ -571,10 +569,15 @@ def main():
             # Agent status containers
             agent_status_cols = st.columns(3)
             agent_statuses = {}
-            agent_icons = {
-                "Data Retrieval Agent": "📊",
-                "Tax Analysis Agent": "🧮",
-                "Advisory Agent": "📋",
+            agent_abbr = {
+                "Data Retrieval Agent": "DR",
+                "Tax Analysis Agent": "TA",
+                "Advisory Agent": "AD",
+            }
+            agent_color = {
+                "Data Retrieval Agent": _C["primary"],
+                "Tax Analysis Agent": "#8B5CF6",
+                "Advisory Agent": "#06B6D4",
             }
             agent_descriptions = {
                 "Data Retrieval Agent": "Fetching portfolio data from database",
@@ -584,14 +587,15 @@ def main():
 
             for i, (agent_key, col) in enumerate(zip(["Data Retrieval Agent", "Tax Analysis Agent", "Advisory Agent"], agent_status_cols)):
                 with col:
-                    icon = agent_icons.get(agent_key, "🤖")
+                    abbr = agent_abbr.get(agent_key, "AI")
+                    color = agent_color.get(agent_key, _C["primary"])
                     desc = agent_descriptions.get(agent_key, "")
                     agent_statuses[agent_key] = st.empty()
                     agent_statuses[agent_key].markdown(f"""
-                    <div style="background:{_C['card']}; border:1px solid {_C['border_subtle']}; border-radius:12px; padding:16px; text-align:center; opacity:0.5;" id="agent-status-{i}">
-                        <div style="font-size:24px; margin-bottom:8px;">{icon}</div>
+                    <div style="background:{_C['card']}; border:1px solid {_C['border_subtle']}; border-radius:12px; padding:16px; text-align:center; opacity:0.45;">
+                        <div style="width:36px; height:36px; border-radius:8px; background:rgba(55,65,81,0.6); display:flex; align-items:center; justify-content:center; margin:0 auto 10px auto; font-size:12px; font-weight:700; color:{_C['text_muted']}; letter-spacing:0.5px;">{abbr}</div>
                         <div style="font-size:13px; font-weight:600; color:{_C['text_muted']};">{agent_key}</div>
-                        <div style="font-size:11px; color:{_C['text_muted']}; margin-top:4px;">Waiting...</div>
+                        <div style="font-size:11px; color:{_C['text_muted']}; margin-top:4px;">Waiting</div>
                     </div>
                     """, unsafe_allow_html=True)
 
@@ -622,38 +626,48 @@ def main():
 
             # Update agent status card
             if agent in agent_statuses:
-                icon = agent_icons.get(agent, "🤖")
+                abbr = agent_abbr.get(agent, "AI")
+                color = agent_color.get(agent, _C["primary"])
                 desc = agent_descriptions.get(agent, "")
 
                 if status in ("data_fetched", "tax_analyzed"):
-                    # Stage completed
                     completed_stages.add(stage)
                     agent_statuses[agent].markdown(f"""
                     <div style="background:{_C['card']}; border:1px solid {_C['success']}; border-radius:12px; padding:16px; text-align:center;">
-                        <div style="font-size:24px; margin-bottom:8px;">✅</div>
+                        <div style="width:36px; height:36px; border-radius:8px; background:rgba(16,185,129,0.15); border:1px solid rgba(16,185,129,0.3); display:flex; align-items:center; justify-content:center; margin:0 auto 10px auto; font-size:16px; font-weight:700; color:{_C['success']};">&#10003;</div>
                         <div style="font-size:13px; font-weight:600; color:{_C['success']};">{agent}</div>
                         <div style="font-size:11px; color:{_C['text_sec']}; margin-top:4px;">Completed</div>
                     </div>
                     """, unsafe_allow_html=True)
                 elif stage in completed_stages:
-                    # Already done
                     pass
                 else:
-                    # Currently running
                     agent_statuses[agent].markdown(f"""
-                    <div style="background:{_C['card']}; border:1px solid {_C['primary']}; border-radius:12px; padding:16px; text-align:center; box-shadow:0 0 20px rgba(59,130,246,0.15);">
-                        <div style="font-size:24px; margin-bottom:8px;">{icon}</div>
-                        <div style="font-size:13px; font-weight:600; color:{_C['primary']};">{agent}</div>
+                    <div style="background:{_C['card']}; border:1px solid {color}; border-radius:12px; padding:16px; text-align:center; box-shadow:0 0 20px rgba(59,130,246,0.12);">
+                        <div style="width:36px; height:36px; border-radius:8px; background:rgba(59,130,246,0.15); display:flex; align-items:center; justify-content:center; margin:0 auto 10px auto; font-size:12px; font-weight:700; color:{color}; letter-spacing:0.5px;">{abbr}</div>
+                        <div style="font-size:13px; font-weight:600; color:{color};">{agent}</div>
                         <div style="font-size:11px; color:{_C['text_sec']}; margin-top:4px;">{desc}</div>
-                        <div style="font-size:11px; color:{_C['text_muted']}; margin-top:8px; font-style:italic;">{message[:80]}...</div>
+                        <div style="font-size:11px; color:{_C['text_muted']}; margin-top:8px;">{message[:80]}</div>
                     </div>
                     """, unsafe_allow_html=True)
 
             # Update live log
-            log_messages.append(f"**{agent}** — {message}")
+            log_messages.append((agent, message))
             if len(log_messages) > 6:
                 log_messages = log_messages[-6:]
-            log_container.markdown("\n".join([f"- {m}" for m in log_messages]))
+            rows = "".join([
+                f'<div style="display:flex; gap:10px; padding:5px 0; border-bottom:1px solid {_C["border"]};">'
+                f'<span style="font-size:11px; font-weight:600; color:{agent_color.get(a, _C["primary"])}; min-width:110px; flex-shrink:0;">{a[:14]}</span>'
+                f'<span style="font-size:11px; color:{_C["text_sec"]};">{m}</span>'
+                f'</div>'
+                for a, m in log_messages
+            ])
+            log_container.markdown(
+                f'<div style="background:{_C["card"]}; border:1px solid {_C["border_subtle"]}; border-radius:8px; padding:12px 14px; margin-top:12px;">'
+                f'<div style="font-size:10px; font-weight:600; text-transform:uppercase; letter-spacing:0.8px; color:{_C["text_muted"]}; margin-bottom:8px;">Live Log</div>'
+                f'{rows}</div>',
+                unsafe_allow_html=True,
+            )
 
             # Small delay for visual effect
             import time
@@ -664,7 +678,7 @@ def main():
             if agent_key in agent_statuses:
                 agent_statuses[agent_key].markdown(f"""
                 <div style="background:{_C['card']}; border:1px solid {_C['success']}; border-radius:12px; padding:16px; text-align:center;">
-                    <div style="font-size:24px; margin-bottom:8px;">✅</div>
+                    <div style="width:36px; height:36px; border-radius:8px; background:rgba(16,185,129,0.15); border:1px solid rgba(16,185,129,0.3); display:flex; align-items:center; justify-content:center; margin:0 auto 10px auto; font-size:16px; font-weight:700; color:{_C['success']};">&#10003;</div>
                     <div style="font-size:13px; font-weight:600; color:{_C['success']};">{agent_key}</div>
                     <div style="font-size:11px; color:{_C['text_sec']}; margin-top:4px;">Completed</div>
                 </div>
