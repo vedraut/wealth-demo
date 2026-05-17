@@ -265,7 +265,14 @@ def _pnl_bar_chart(breakdown):
 # UI SECTIONS
 # =============================================================================
 def render_header():
-    col1, col2 = st.columns([5, 1])
+    # ── Download Architecture PPTX (top-right) ──
+    pptx_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), "workspace", "wealth-ai-memory-architecture.pptx")
+    pptx_bytes = None
+    if os.path.exists(pptx_path):
+        with open(pptx_path, "rb") as f:
+            pptx_bytes = f.read()
+
+    col1, col2, col3 = st.columns([4, 2, 2])
     with col1:
         st.markdown(f"""
         <div style="padding:8px 0 20px 0; display:flex; align-items:center; gap:14px;">
@@ -285,6 +292,16 @@ def render_header():
             <div style="font-size:12px; color:{_C['text_sec']}; font-weight:500;">FY 2025-26</div>
         </div>
         """, unsafe_allow_html=True)
+    with col3:
+        if pptx_bytes:
+            st.download_button(
+                label="📥 Architecture Deck",
+                data=pptx_bytes,
+                file_name="wealth-ai-memory-architecture.pptx",
+                mime="application/vnd.openxmlformats-officedocument.presentationml.presentation",
+                use_container_width=True,
+                key="header_pptx_download",
+            )
     st.markdown(f'<hr style="border:none; border-top:1px solid {_C["border_subtle"]}; margin:0 0 24px 0;">', unsafe_allow_html=True)
 
 
@@ -739,19 +756,7 @@ def main():
     else:
         render_empty_state()
 
-    # ── Download Architecture PPTX ──
-    pptx_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), "workspace", "wealth-ai-memory-architecture.pptx")
-    if os.path.exists(pptx_path):
-        with open(pptx_path, "rb") as f:
-            pptx_bytes = f.read()
-        st.markdown("<br>", unsafe_allow_html=True)
-        st.download_button(
-            label="📥 Download Architecture Deck",
-            data=pptx_bytes,
-            file_name="wealth-ai-memory-architecture.pptx",
-            mime="application/vnd.openxmlformats-officedocument.presentationml.presentation",
-            use_container_width=True,
-        )
+
 
 
 if __name__ == "__main__":
