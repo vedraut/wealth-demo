@@ -53,6 +53,9 @@ def inject_design_system():
     st.markdown(f"""
     <style>
         #MainMenu, footer, header {{visibility: hidden;}}
+        /* Hide the sidebar collapse button so the nav stays permanently open */
+        [data-testid="stSidebarCollapseButton"] {{display: none !important;}}
+        [data-testid="collapsedControl"] {{display: none !important;}}
 
         .stApp {{ background-color: {_C['bg']} !important; }}
 
@@ -144,6 +147,29 @@ def inject_design_system():
         .stProgress > div > div {{
             background: {_C['border_subtle']} !important;
             border-radius: 4px !important;
+        }}
+
+        /* Download button — matches primary button theme */
+        [data-testid="stDownloadButton"] > button {{
+            background: linear-gradient(135deg, #3B82F6 0%, #2563EB 100%) !important;
+            border: none !important;
+            border-radius: 8px !important;
+            font-weight: 600 !important;
+            font-size: 13px !important;
+            letter-spacing: 0.3px !important;
+            color: white !important;
+            box-shadow: 0 4px 15px rgba(59,130,246,0.25) !important;
+            transition: box-shadow 0.2s ease, transform 0.15s ease !important;
+            width: 100% !important;
+            padding: 10px 20px !important;
+        }}
+        [data-testid="stDownloadButton"] > button:hover {{
+            box-shadow: 0 6px 20px rgba(59,130,246,0.45) !important;
+            transform: translateY(-1px) !important;
+        }}
+        [data-testid="stDownloadButton"] > button:active {{
+            transform: translateY(0px) !important;
+            box-shadow: 0 2px 8px rgba(59,130,246,0.3) !important;
         }}
 
         /* Alert variants */
@@ -295,7 +321,7 @@ def render_header():
     with col3:
         if pptx_bytes:
             st.download_button(
-                label="📥 Architecture Deck",
+                label="Download Architecture Deck",
                 data=pptx_bytes,
                 file_name="wealth-ai-memory-architecture.pptx",
                 mime="application/vnd.openxmlformats-officedocument.presentationml.presentation",
