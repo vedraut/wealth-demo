@@ -24,7 +24,7 @@ class LLMClient:
     def __init__(self, model: str = "moonshot/kimi-k2.6"):
         self.model = model
 
-    def generate(self, prompt: str, system: Optional[str] = None, client_id: Optional[int] = None, response_type: Optional[str] = None) -> str:
+    def generate(self, prompt: str, system: Optional[str] = None, client_id: Optional[int] = None, response_type: Optional[str] = None, use_cache: bool = False) -> str:
         """Generate text using Kimi K2.6 via OpenClaw CLI.
         
         Args:
@@ -32,9 +32,10 @@ class LLMClient:
             system: Optional system message
             client_id: Client ID for cache lookup (1, 2, or 3)
             response_type: 'tax' or 'summary' for cache lookup
+            use_cache: If True, use pre-generated cache; if False, always call live LLM
         """
-        # Check pre-generated cache first (instant)
-        if client_id and response_type:
+        # Check pre-generated cache only if explicitly requested
+        if use_cache and client_id and response_type:
             cache_key = f"{response_type}_{client_id}"
             if cache_key in _response_cache:
                 print(f"[LLM] Using pre-generated AI response for client {client_id} ({response_type})")
@@ -57,7 +58,7 @@ class LLMClient:
         start = time.time()
         
         result = subprocess.run(
-            ["openclaw", "infer", "model", "run", "--model", self.model, "--prompt", full_prompt],
+            ["openclaw", "capability", "model", "run", "--model", self.model, "--prompt", full_prompt],
             capture_output=True,
             text=True,
             timeout=120
@@ -69,7 +70,7 @@ class LLMClient:
         if result.returncode != 0:
             raise RuntimeError(f"OpenClaw CLI error: {result.stderr}")
         
-        # Parse the output - skip the header lines
+        # Parse the output - OpenClaw outputs: N header then the content
         lines = result.stdout.strip().split('\n')
         # Find the actual output (after "outputs: N" line)
         output_started = False
