@@ -34,8 +34,11 @@ class LLMClient:
             response_type: 'tax' or 'summary' for cache lookup
             use_cache: If True, use pre-generated cache; if False, always call live LLM
         """
-        # Check pre-generated cache only if explicitly requested
-        if use_cache and client_id and response_type:
+        # Check global cache setting first, then per-call override
+        should_use_cache = _global_use_cache or use_cache
+        
+        # Check pre-generated cache
+        if should_use_cache and client_id and response_type:
             cache_key = f"{response_type}_{client_id}"
             if cache_key in _response_cache:
                 print(f"[LLM] Using pre-generated AI response for client {client_id} ({response_type})")
@@ -96,6 +99,22 @@ class LLMClient:
             return "Portfolio analysis complete. Your asset allocation and performance metrics are summarized in the detailed report below."
         else:
             return "Analysis complete. Review the recommendations and action items in the report section."
+
+
+# Global cache setting (can be toggled at runtime)
+_global_use_cache: bool = True
+
+
+def set_global_cache(enabled: bool):
+    """Toggle global cache setting for all LLM calls."""
+    global _global_use_cache
+    _global_use_cache = enabled
+    print(f"[LLM] Global cache {'enabled' if enabled else 'disabled'}")
+
+
+def get_global_cache() -> bool:
+    """Get current global cache setting."""
+    return _global_use_cache
 
 
 # Singleton instance

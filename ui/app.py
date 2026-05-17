@@ -11,6 +11,7 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from graph import run_wealth_analysis, run_wealth_analysis_streaming
 from database.seed_data import create_database, get_connection
+from agents.llm_client import set_global_cache, get_global_cache
 import pandas as pd
 import plotly.graph_objects as go
 from datetime import datetime
@@ -536,15 +537,33 @@ def main():
     clients = get_clients()
     selected_client_id = render_sidebar(clients)
 
+    # LLM Mode Toggle
     col1, col2, col3 = st.columns([1, 2, 1])
+    with col1:
+        use_cache = st.toggle(
+            "⚡ Fast Mode (Cached)",
+            value=True,
+            help="Toggle ON for instant cached responses (~1s). Toggle OFF for live Kimi K2.6 AI generation (~40s)."
+        )
+        set_global_cache(use_cache)
     with col2:
         analyze_clicked = st.button("Generate Wealth Report", type="primary", use_container_width=True)
+    with col3:
+        if not use_cache:
+            st.markdown(f'<div style="text-align:center; padding-top:8px;"><span style="background:rgba(139,92,246,0.15); color:#C4B5FD; border:1px solid rgba(139,92,246,0.3); border-radius:4px; padding:4px 10px; font-size:11px; font-weight:600;">🧠 Live Kimi K2.6</span></div>', unsafe_allow_html=True)
+        else:
+            st.markdown(f'<div style="text-align:center; padding-top:8px;"><span style="background:rgba(16,185,129,0.15); color:#6EE7B7; border:1px solid rgba(16,185,129,0.3); border-radius:4px; padding:4px 10px; font-size:11px; font-weight:600;">⚡ Cached (Instant)</span></div>', unsafe_allow_html=True)
 
     if analyze_clicked:
         # Create containers for real-time progress
         progress_container = st.container()
         with progress_container:
-            st.markdown(f'<div style="font-size:11px; font-weight:600; text-transform:uppercase; letter-spacing:0.8px; color:{_C["text_muted"]}; margin-bottom:16px;">Agent Execution Pipeline</div>', unsafe_allow_html=True)
+            mode_badge = "⚡ Cached" if use_cache else "🧠 Live Kimi K2.6"
+            mode_color = _C["success"] if use_cache else "#8B5CF6"
+            st.markdown(f'''<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">
+                <div style="font-size:11px; font-weight:600; text-transform:uppercase; letter-spacing:0.8px; color:{_C["text_muted"]};">Agent Execution Pipeline</div>
+                <div style="background:rgba({"16,185,129" if use_cache else "139,92,246"},0.15); color:{mode_color}; border:1px solid rgba({"16,185,129" if use_cache else "139,92,246"},0.3); border-radius:4px; padding:3px 10px; font-size:10px; font-weight:600;">{mode_badge}</div>
+            </div>''', unsafe_allow_html=True)
 
             # Progress bar
             progress_bar = st.progress(0)
