@@ -739,6 +739,20 @@ def main():
     else:
         render_empty_state()
 
+    # ── Download Architecture PPTX ──
+    pptx_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), "workspace", "wealth-ai-memory-architecture.pptx")
+    if os.path.exists(pptx_path):
+        with open(pptx_path, "rb") as f:
+            pptx_bytes = f.read()
+        st.markdown("<br>", unsafe_allow_html=True)
+        st.download_button(
+            label="📥 Download Architecture Deck",
+            data=pptx_bytes,
+            file_name="wealth-ai-memory-architecture.pptx",
+            mime="application/vnd.openxmlformats-officedocument.presentationml.presentation",
+            use_container_width=True,
+        )
+
 
 if __name__ == "__main__":
     main()
