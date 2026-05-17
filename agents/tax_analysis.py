@@ -135,8 +135,7 @@ Keep it concise and practical.
             tax_prompt, 
             system="You are a senior tax advisor specializing in Indian Income Tax Act 2025. Provide concise, actionable advice.",
             client_id=state.get('client_id'),
-            response_type='tax',
-            use_cache=True
+            response_type='tax'
         )
         add_thought("llm", "Generated AI-powered tax insights")
 
