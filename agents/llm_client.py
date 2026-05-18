@@ -75,7 +75,6 @@ class LLMClient:
             json={
                 "model": "kimi-k2.6",
                 "messages": messages,
-                "temperature": 0.3,
                 "max_tokens": 4000
             },
             timeout=120
