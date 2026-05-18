@@ -1,14 +1,14 @@
 """
-LLM client using Kimi K2.6 via OpenClaw CLI.
+LLM client using Kimi K2.6 via direct API call.
 Ollama is disabled due to GPU memory issues.
+OpenClaw Gateway is not available on VPS, so we use the Kimi API directly.
 """
 
 import os
 import json
-import subprocess
-from typing import Optional
-import hashlib
 import time
+from typing import Optional
+import requests
 
 # Load pre-generated AI response cache
 _cache_file = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'ai_response_cache.json')
@@ -19,13 +19,15 @@ if os.path.exists(_cache_file):
 
 
 class LLMClient:
-    """Client that calls Kimi K2.6 via OpenClaw CLI."""
+    """Client that calls Kimi K2.6 via direct API."""
 
     def __init__(self, model: str = "moonshot/kimi-k2.6"):
         self.model = model
+        self.api_key = os.environ.get("KIMI_API_KEY")
+        self.api_base = "https://api.moonshot.cn/v1"
 
     def generate(self, prompt: str, system: Optional[str] = None, client_id: Optional[int] = None, response_type: Optional[str] = None, use_cache: bool = False) -> str:
-        """Generate text using Kimi K2.6 via OpenClaw CLI.
+        """Generate text using Kimi K2.6 via direct API.
         
         Args:
             prompt: The prompt text
@@ -44,47 +46,48 @@ class LLMClient:
                 print(f"[LLM] Using pre-generated AI response for client {client_id} ({response_type})")
                 return _response_cache[cache_key]
         
-        # Try live generation via OpenClaw CLI
+        # Try live generation via Kimi API
         try:
-            return self._call_openclaw(prompt, system)
+            return self._call_kimi_api(prompt, system)
         except Exception as e:
-            print(f"⚠️ OpenClaw CLI failed: {e}. Using fallback.")
+            print(f"⚠️ Kimi API failed: {e}. Using fallback.")
             return self._fallback_response(prompt)
 
-    def _call_openclaw(self, prompt: str, system: Optional[str] = None) -> str:
-        """Call OpenClaw CLI to run Kimi K2.6."""
-        full_prompt = prompt
-        if system:
-            full_prompt = f"{system}\n\n{prompt}"
+    def _call_kimi_api(self, prompt: str, system: Optional[str] = None) -> str:
+        """Call Kimi API directly."""
+        if not self.api_key:
+            raise RuntimeError("KIMI_API_KEY not set")
         
-        print(f"[LLM] Calling Kimi K2.6 via OpenClaw CLI...")
+        messages = []
+        if system:
+            messages.append({"role": "system", "content": system})
+        messages.append({"role": "user", "content": prompt})
+        
+        print(f"[LLM] Calling Kimi K2.6 via API...")
         start = time.time()
         
-        result = subprocess.run(
-            ["openclaw", "capability", "model", "run", "--model", self.model, "--prompt", full_prompt],
-            capture_output=True,
-            text=True,
+        response = requests.post(
+            f"{self.api_base}/chat/completions",
+            headers={
+                "Authorization": f"Bearer {self.api_key}",
+                "Content-Type": "application/json"
+            },
+            json={
+                "model": "kimi-k2-6",
+                "messages": messages,
+                "temperature": 0.3,
+                "max_tokens": 4000
+            },
             timeout=120
         )
         
         elapsed = time.time() - start
         print(f"[LLM] Response received in {elapsed:.1f}s")
         
-        if result.returncode != 0:
-            raise RuntimeError(f"OpenClaw CLI error: {result.stderr}")
+        response.raise_for_status()
+        data = response.json()
         
-        # Parse the output - OpenClaw outputs: N header then the content
-        lines = result.stdout.strip().split('\n')
-        # Find the actual output (after "outputs: N" line)
-        output_started = False
-        output_lines = []
-        for line in lines:
-            if output_started:
-                output_lines.append(line)
-            elif line.startswith("outputs:"):
-                output_started = True
-        
-        return '\n'.join(output_lines).strip()
+        return data["choices"][0]["message"]["content"].strip()
 
     def _fallback_response(self, prompt: str) -> str:
         """Generate a contextual fallback response."""

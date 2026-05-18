@@ -85,6 +85,7 @@ jobs:
             -e STREAMLIT_SERVER_ADDRESS=0.0.0.0 \
             -e STREAMLIT_BROWSER_GATHER_USAGE_STATS=false \
             -e STREAMLIT_THEME_BASE=dark \
+            -e KIMI_API_KEY=${{ secrets.KIMI_API_KEY }} \
             ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest
           
           # Wait for health check

@@ -15,6 +15,7 @@ services:
       - STREAMLIT_SERVER_ADDRESS=0.0.0.0
       - STREAMLIT_BROWSER_GATHER_USAGE_STATS=false
       - STREAMLIT_THEME_BASE=dark
+      - KIMI_API_KEY=${KIMI_API_KEY}
     networks:
       - laracorp-net
     healthcheck:
