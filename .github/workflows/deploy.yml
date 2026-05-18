@@ -1,0 +1,103 @@
+name: Deploy Wealth Demo to VPS
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}/wealth-demo
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v3
+
+    - name: Log in to Container Registry
+      uses: docker/login-action@v3
+      with:
+        registry: ${{ env.REGISTRY }}
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
+
+    - name: Extract metadata
+      id: meta
+      uses: docker/metadata-action@v5
+      with:
+        images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+        tags: |
+          type=sha,prefix={{branch}}-
+          type=raw,value=latest,enable={{is_default_branch}}
+
+    - name: Build and push Docker image
+      uses: docker/build-push-action@v5
+      with:
+        context: .
+        push: true
+        tags: ${{ steps.meta.outputs.tags }}
+        labels: ${{ steps.meta.outputs.labels }}
+        cache-from: type=gha
+        cache-to: type=gha,mode=max
+
+  deploy:
+    needs: build-and-push
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Deploy to VPS
+      uses: appleboy/ssh-action@v1.0.0
+      with:
+        host: ${{ secrets.VPS_HOST }}
+        username: ${{ secrets.VPS_USER }}
+        password: ${{ secrets.VPS_PASSWORD }}
+        script: |
+          set -e
+          echo "🚀 Deploying wealth-demo..."
+          
+          # Pull latest image
+          docker pull ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest
+          
+          # Stop and remove old container
+          docker stop wealth-demo || true
+          docker rm wealth-demo || true
+          
+          # Run new container
+          docker run -d \
+            --name wealth-demo \
+            --restart unless-stopped \
+            --network laracorp-net \
+            -p 127.0.0.1:8501:8501 \
+            -e STREAMLIT_SERVER_HEADLESS=true \
+            -e STREAMLIT_SERVER_PORT=8501 \
+            -e STREAMLIT_SERVER_ADDRESS=0.0.0.0 \
+            -e STREAMLIT_BROWSER_GATHER_USAGE_STATS=false \
+            -e STREAMLIT_THEME_BASE=dark \
+            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest
+          
+          # Wait for health check
+          echo "⏳ Waiting for health check..."
+          sleep 30
+          
+          # Verify
+          if curl -sf http://localhost:8501/_stcore/health > /dev/null; then
+            echo "✅ Wealth demo is healthy!"
+          else
+            echo "❌ Health check failed"
+            docker logs wealth-demo --tail 50
+            exit 1
+          fi
+          
+          # Cleanup old images
+          docker image prune -f
+          
+          echo "🎉 Deployment complete!"
