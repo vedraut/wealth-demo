@@ -19,6 +19,16 @@ FROM python:3.12-slim
 
 WORKDIR /app
 
+# Install runtime dependencies
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    curl \
+    nodejs \
+    npm \
+    && rm -rf /var/lib/apt/lists/*
+
+# Install OpenClaw CLI
+RUN npm install -g openclaw
+
 # Copy installed packages from builder
 COPY --from=builder /root/.local /root/.local
 ENV PATH=/root/.local/bin:$PATH
@@ -39,6 +49,10 @@ ENV STREAMLIT_THEME_BASE=dark
 # Health check
 HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
     CMD curl -f http://localhost:8501/_stcore/health || exit 1
+
+# Add host.docker.internal for OpenClaw gateway access
+ENV OPENCLAW_GATEWAY_URL=http://host.docker.internal:18789
+ENV OPENCLAW_GATEWAY_HOST=host.docker.internal
 
 EXPOSE 8501
 
