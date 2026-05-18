@@ -24,7 +24,7 @@ class LLMClient:
     def __init__(self, model: str = "moonshot/kimi-k2.6"):
         self.model = model
         self.api_key = os.environ.get("KIMI_API_KEY")
-        self.api_base = "https://api.moonshot.cn/v1"
+        self.api_base = "https://api.moonshot.ai/v1"
 
     def generate(self, prompt: str, system: Optional[str] = None, client_id: Optional[int] = None, response_type: Optional[str] = None, use_cache: bool = False) -> str:
         """Generate text using Kimi K2.6 via direct API.
