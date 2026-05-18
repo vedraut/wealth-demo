@@ -7,7 +7,7 @@ on:
 
 env:
   REGISTRY: ghcr.io
-  IMAGE_NAME: ${{ github.repository }}/wealth-demo
+  IMAGE_NAME: vedraut/wealth-demo/wealth-demo
 
 jobs:
   build-and-push:
@@ -64,6 +64,9 @@ jobs:
           set -e
           echo "🚀 Deploying wealth-demo..."
           
+          # Login to GHCR
+          echo ${{ secrets.GITHUB_TOKEN }} | docker login ghcr.io -u ${{ github.actor }} --password-stdin
+          
           # Pull latest image
           docker pull ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest
           
@@ -101,3 +104,4 @@ jobs:
           docker image prune -f
           
           echo "🎉 Deployment complete!"
+          echo "🌐 https://wealth-demo.ved-raut.tech"
