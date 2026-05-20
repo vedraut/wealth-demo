@@ -583,12 +583,15 @@ def main():
     # LLM Mode — permanently locked to Fast Mode (Cached) to conserve tokens
     col1, col2, col3 = st.columns([1, 2, 1])
     with col1:
-        st.toggle(
-            "Fast Mode (Cached)",
-            value=True,
-            disabled=True,
-            help="Live AI mode is temporarily disabled to conserve API tokens. Using cached responses for instant results."
-        )
+        # Render a disabled-looking toggle using HTML since st.toggle disabled may not grey out
+        st.markdown(f"""
+        <div style="display:flex; align-items:center; gap:10px; padding:4px 0; opacity:0.6;">
+            <div style="width:36px; height:20px; background:{_C['success']}; border-radius:10px; position:relative; cursor:not-allowed;">
+                <div style="width:16px; height:16px; background:white; border-radius:50%; position:absolute; top:2px; right:2px; box-shadow:0 1px 3px rgba(0,0,0,0.3);"></div>
+            </div>
+            <span style="font-size:13px; color:{_C['text_sec']}; font-weight:500; cursor:not-allowed;">Fast Mode (Cached)</span>
+        </div>
+        """, unsafe_allow_html=True)
         set_global_cache(True)
     with col2:
         analyze_clicked = st.button("Generate Wealth Report", type="primary", use_container_width=True)
