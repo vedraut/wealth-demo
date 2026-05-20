@@ -591,6 +591,9 @@ def main():
             </div>
             <span style="font-size:13px; color:{_C['text_sec']}; font-weight:500; cursor:not-allowed;">Fast Mode (Cached)</span>
         </div>
+        <div style="margin-top:6px; padding:6px 10px; background:rgba(245,158,11,0.1); border:1px solid rgba(245,158,11,0.25); border-radius:6px;">
+            <span style="font-size:11px; color:{_C['warning']}; font-weight:500;">⚡ Live AI suspended for token reservation. Only fast cache mode is active.</span>
+        </div>
         """, unsafe_allow_html=True)
         set_global_cache(True)
     with col2:
