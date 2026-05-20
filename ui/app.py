@@ -599,7 +599,7 @@ def main():
     with col2:
         analyze_clicked = st.button("Generate Wealth Report", type="primary", use_container_width=True)
     with col3:
-        st.markdown(f'<div style="text-align:center; padding-top:8px;"><span style="background:rgba(16,185,129,0.15); color:#6EE7B7; border:1px solid rgba(16,185,129,0.3); border-radius:4px; padding:4px 10px; font-size:11px; font-weight:600; letter-spacing:0.4px;">Cached · Instant</span></div>', unsafe_allow_html=True)
+        st.markdown(f'<div style="text-align:center; padding-top:8px;"><span style="background:rgba(245,158,11,0.15); color:#FCD34D; border:1px solid rgba(245,158,11,0.3); border-radius:4px; padding:4px 10px; font-size:11px; font-weight:600; letter-spacing:0.4px;">⚡ Token Saver</span></div>', unsafe_allow_html=True)
 
     if analyze_clicked:
         # Create containers for real-time progress
