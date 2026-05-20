@@ -27,31 +27,25 @@ class LLMClient:
         self.api_base = "https://api.moonshot.ai/v1"
 
     def generate(self, prompt: str, system: Optional[str] = None, client_id: Optional[int] = None, response_type: Optional[str] = None, use_cache: bool = False) -> str:
-        """Generate text using Kimi K2.6 via direct API.
+        """Generate text using pre-generated cache only. Live AI disabled to conserve tokens.
         
         Args:
             prompt: The prompt text
             system: Optional system message
             client_id: Client ID for cache lookup (1, 2, or 3)
             response_type: 'tax' or 'summary' for cache lookup
-            use_cache: If True, use pre-generated cache; if False, always call live LLM
+            use_cache: Ignored — cache is always used (live AI disabled)
         """
-        # Check global cache setting first, then per-call override
-        should_use_cache = _global_use_cache or use_cache
-        
-        # Check pre-generated cache
-        if should_use_cache and client_id and response_type:
+        # Live AI permanently disabled — always use cache to conserve tokens
+        if client_id and response_type:
             cache_key = f"{response_type}_{client_id}"
             if cache_key in _response_cache:
                 print(f"[LLM] Using pre-generated AI response for client {client_id} ({response_type})")
                 return _response_cache[cache_key]
         
-        # Try live generation via Kimi API
-        try:
-            return self._call_kimi_api(prompt, system)
-        except Exception as e:
-            print(f"⚠️ Kimi API failed: {e}. Using fallback.")
-            return self._fallback_response(prompt)
+        # If cache miss, return fallback (no live API calls)
+        print(f"[LLM] Cache miss for client {client_id} ({response_type}). Using fallback.")
+        return self._fallback_response(prompt)
 
     def _call_kimi_api(self, prompt: str, system: Optional[str] = None) -> str:
         """Call Kimi API directly."""

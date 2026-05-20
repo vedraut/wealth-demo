@@ -580,30 +580,28 @@ def main():
     clients = get_clients()
     selected_client_id = render_sidebar(clients)
 
-    # LLM Mode Toggle
+    # LLM Mode — permanently locked to Fast Mode (Cached) to conserve tokens
     col1, col2, col3 = st.columns([1, 2, 1])
     with col1:
-        use_cache = st.toggle(
+        st.toggle(
             "Fast Mode (Cached)",
             value=True,
-            help="Toggle ON for instant cached responses (~1s). Toggle OFF for live Kimi K2.6 AI generation (~40s)."
+            disabled=True,
+            help="Live AI mode is temporarily disabled to conserve API tokens. Using cached responses for instant results."
         )
-        set_global_cache(use_cache)
+        set_global_cache(True)
     with col2:
         analyze_clicked = st.button("Generate Wealth Report", type="primary", use_container_width=True)
     with col3:
-        if not use_cache:
-            st.markdown('<div style="text-align:center; padding-top:8px;"><span style="background:rgba(139,92,246,0.15); color:#C4B5FD; border:1px solid rgba(139,92,246,0.3); border-radius:4px; padding:4px 10px; font-size:11px; font-weight:600; letter-spacing:0.4px;">Live AI</span></div>', unsafe_allow_html=True)
-        else:
-            st.markdown(f'<div style="text-align:center; padding-top:8px;"><span style="background:rgba(16,185,129,0.15); color:#6EE7B7; border:1px solid rgba(16,185,129,0.3); border-radius:4px; padding:4px 10px; font-size:11px; font-weight:600; letter-spacing:0.4px;">Cached · Instant</span></div>', unsafe_allow_html=True)
+        st.markdown(f'<div style="text-align:center; padding-top:8px;"><span style="background:rgba(16,185,129,0.15); color:#6EE7B7; border:1px solid rgba(16,185,129,0.3); border-radius:4px; padding:4px 10px; font-size:11px; font-weight:600; letter-spacing:0.4px;">Cached · Instant</span></div>', unsafe_allow_html=True)
 
     if analyze_clicked:
         # Create containers for real-time progress
         progress_container = st.container()
         with progress_container:
-            mode_badge = "Cached · Instant" if use_cache else "Live AI"
-            mode_color = _C["success"] if use_cache else "#8B5CF6"
-            mode_rgb = "16,185,129" if use_cache else "139,92,246"
+            mode_badge = "Cached · Instant"
+            mode_color = _C["success"]
+            mode_rgb = "16,185,129"
             st.markdown(f'<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;"><div style="font-size:11px; font-weight:600; text-transform:uppercase; letter-spacing:0.8px; color:{_C["text_muted"]};">Agent Execution Pipeline</div><div style="background:rgba({mode_rgb},0.15); color:{mode_color}; border:1px solid rgba({mode_rgb},0.3); border-radius:4px; padding:3px 10px; font-size:10px; font-weight:600; letter-spacing:0.4px;">{mode_badge}</div></div>', unsafe_allow_html=True)
 
             # Progress bar
