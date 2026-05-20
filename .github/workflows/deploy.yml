@@ -2,7 +2,7 @@ name: Deploy Wealth Demo to VPS
 
 on:
   push:
-    branches: [ main ]
+    branches: [ main, master ]
   workflow_dispatch:
 
 env:
