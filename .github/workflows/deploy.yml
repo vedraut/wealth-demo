@@ -67,12 +67,15 @@ jobs:
           # Login to GHCR
           echo ${{ secrets.GITHUB_TOKEN }} | docker login ghcr.io -u ${{ github.actor }} --password-stdin
           
-          # Pull latest image
-          docker pull ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest
-          
           # Stop and remove old container
           docker stop wealth-demo || true
           docker rm wealth-demo || true
+          
+          # Remove old image to force fresh pull (avoid Docker cache issues)
+          docker rmi ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest || true
+          
+          # Pull latest image
+          docker pull ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest
           
           # Run new container
           docker run -d \
